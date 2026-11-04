@@ -1,6 +1,8 @@
 streamlit
 scikit-fuzzy
 numpy
+scipy
+networkx
 pandas
 matplotlib
 packaging
