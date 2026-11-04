@@ -48,6 +48,9 @@ if st.button("Hitung", type="primary"):
         st.error(str(e))
 
 res = st.session_state.get("res")
+if res and "score" not in res:  # sisa hasil dari versi kode lama
+    res = None
+    st.session_state.pop("res", None)
 if res:
     # Semua nilai di bawah dibaca dari hasil perhitungan, bukan dari widget saat ini
     prev = res["prev_score"]
@@ -68,7 +71,7 @@ if res:
     for col, (var, terms) in zip(cols, res["mem"].items()):
         with col:
             st.markdown(f"**{var}**")
-            st.dataframe(pd.DataFrame({"Himpunan": list(terms), "Derajat": [round(v, 4) for v in terms.values()]}),
+            st.dataframe(pd.DataFrame({"Himpunan": list(terms), "Derajat": [float(v) for v in terms.values()]}).round(4),
                          hide_index=True, width="stretch")
             active = [t for t, v in terms.items() if v > 0]
             st.write("Aktif: " + (", ".join(f"{t} ({terms[t]:.2f})" for t in active) or "-"))
