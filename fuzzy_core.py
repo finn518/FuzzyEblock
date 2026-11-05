@@ -1,48 +1,59 @@
-"""Inti Fuzzy Sugeno (scikit-fuzzy) untuk Adaptive Variable Ratio Reward Scheduling E-Block."""
-import math
-
 import numpy as np
 import skfuzzy as fuzz
 
-# ---------- Himpunan fuzzy & domain (sesuai catatan) ----------
+# Himpunan fuzzy dan domain
 SETS = {
     "Performance": {
-        "universe": (0, 100),
-        "sets": {
-            "Rendah": ("Bahu kiri", [0, 0, 40]),
-            "Baik": ("Segitiga", [30, 50, 70]),
-            "Sangat_Baik": ("Bahu kanan", [60, 100, 100]),
-        },
+        "domain": np.arange(0, 101),
+        "Rendah": [0, 0, 40],
+        "Baik": [30, 50, 70],
+        "Sangat_Baik": [60, 100, 100],
     },
     "Improvement": {
-        "universe": (0, 100),
-        "sets": {
-            "Rendah": ("Bahu kiri", [0, 0, 40]),
-            "Cukup": ("Segitiga", [30, 50, 70]),
-            "Tinggi": ("Bahu kanan", [60, 100, 100]),
-        },
+        "domain": np.arange(0, 101),
+        "Rendah": [0, 0, 40],
+        "Cukup": [30, 50, 70],
+        "Tinggi": [60, 100, 100],
     },
     "Attempts": {
-        "universe": (1, 5),
-        "sets": {
-            "Rendah": ("Bahu kiri", [1, 1, 3]),
-            "Cukup": ("Segitiga", [2, 3, 4]),
-            "Tinggi": ("Bahu kanan", [3, 5, 5]),
-        },
+        "domain": np.arange(1, 6),
+        "Rendah": [1, 1, 3],
+        "Cukup": [2, 3, 4],
+        "Tinggi": [3, 5, 5],
     },
 }
 
-# ---------- Rule base (Performance, Improvement, Attempts, z) ----------
+# Rule base: (Performance, Improvement, Attempts, z)
 RULES = [
-    ("Rendah", "Rendah", "Rendah", 3), ("Rendah", "Rendah", "Cukup", 2), ("Rendah", "Rendah", "Tinggi", 1),
-    ("Rendah", "Cukup", "Rendah", 2), ("Rendah", "Cukup", "Cukup", 2), ("Rendah", "Cukup", "Tinggi", 1),
-    ("Rendah", "Tinggi", "Rendah", 0), ("Rendah", "Tinggi", "Cukup", 2), ("Rendah", "Tinggi", "Tinggi", 3),
-    ("Baik", "Rendah", "Rendah", 2), ("Baik", "Rendah", "Cukup", 2), ("Baik", "Rendah", "Tinggi", 3),
-    ("Baik", "Cukup", "Rendah", 1), ("Baik", "Cukup", "Cukup", 2), ("Baik", "Cukup", "Tinggi", 2),
-    ("Baik", "Tinggi", "Rendah", 0), ("Baik", "Tinggi", "Cukup", 1), ("Baik", "Tinggi", "Tinggi", 2),
-    ("Sangat_Baik", "Rendah", "Rendah", 0), ("Sangat_Baik", "Rendah", "Cukup", 1), ("Sangat_Baik", "Rendah", "Tinggi", 2),
-    ("Sangat_Baik", "Cukup", "Rendah", 0), ("Sangat_Baik", "Cukup", "Cukup", 0), ("Sangat_Baik", "Cukup", "Tinggi", 1),
-    ("Sangat_Baik", "Tinggi", "Rendah", 0), ("Sangat_Baik", "Tinggi", "Cukup", 1), ("Sangat_Baik", "Tinggi", "Tinggi", 2),
+    ("Rendah", "Rendah", "Rendah", 3),
+    ("Rendah", "Rendah", "Cukup", 2),
+    ("Rendah", "Rendah", "Tinggi", 1),
+    ("Rendah", "Cukup", "Rendah", 2),
+    ("Rendah", "Cukup", "Cukup", 2),
+    ("Rendah", "Cukup", "Tinggi", 1),
+    ("Rendah", "Tinggi", "Rendah", 0),
+    ("Rendah", "Tinggi", "Cukup", 2),
+    ("Rendah", "Tinggi", "Tinggi", 3),
+
+    ("Baik", "Rendah", "Rendah", 2),
+    ("Baik", "Rendah", "Cukup", 2),
+    ("Baik", "Rendah", "Tinggi", 3),
+    ("Baik", "Cukup", "Rendah", 1),
+    ("Baik", "Cukup", "Cukup", 2),
+    ("Baik", "Cukup", "Tinggi", 2),
+    ("Baik", "Tinggi", "Rendah", 0),
+    ("Baik", "Tinggi", "Cukup", 1),
+    ("Baik", "Tinggi", "Tinggi", 2),
+
+    ("Sangat_Baik", "Rendah", "Rendah", 0),
+    ("Sangat_Baik", "Rendah", "Cukup", 1),
+    ("Sangat_Baik", "Rendah", "Tinggi", 2),
+    ("Sangat_Baik", "Cukup", "Rendah", 0),
+    ("Sangat_Baik", "Cukup", "Cukup", 0),
+    ("Sangat_Baik", "Cukup", "Tinggi", 1),
+    ("Sangat_Baik", "Tinggi", "Rendah", 0),
+    ("Sangat_Baik", "Tinggi", "Cukup", 1),
+    ("Sangat_Baik", "Tinggi", "Tinggi", 2),
 ]
 
 POOL = {
@@ -51,82 +62,151 @@ POOL = {
 }
 
 
-def calculate_performance(score, time_min, ref_time):
-    """Performance = skor * (1 - waktu / (2 * waktu_acuan)), dibatasi 0-100."""
+# Menghitung nilai Performance
+def calculate_performance(score, time_min, avg_time):
     if not 0 <= score <= 100:
         raise ValueError("Skor harus 0-100.")
+
     if time_min < 0:
         raise ValueError("Waktu tidak boleh negatif.")
-    if ref_time <= 0:
-        raise ValueError("Waktu acuan/rata-rata harus > 0.")
-    return float(max(0.0, min(100.0, score * (1 - time_min / (2 * ref_time)))))
+
+    if avg_time <= 0:
+        raise ValueError("Waktu rata-rata harus > 0.")
+
+    return float(max(
+        0.0,
+        min(100.0, score * (1 - time_min / (2 * avg_time)))
+    ))
 
 
+# Menghitung nilai Improvement
 def calculate_improvement(score, prev_score=None):
-    """Improvement = max(0, skor - skor sebelumnya); 0 jika tidak ada skor sebelumnya."""
+    if not 0 <= score <= 100:
+        raise ValueError("Skor harus 0-100.")
+
     if prev_score is None:
         return 0.0
+
     if not 0 <= prev_score <= 100:
         raise ValueError("Skor sebelumnya harus 0-100.")
+
     return float(max(0.0, score - prev_score))
 
+# contoh penggunaan, data_input = {"Performance" : x, "Improvement": x, "Attempts" : x}
+# Proses fuzzifikasi
+def fuzzifikasi(data_input):
+    memberships = {}
 
-def mu(x, params):
-    """Derajat keanggotaan via scikit-fuzzy trimf."""
-    return float(fuzz.trimf(np.array([x], dtype=float), params)[0])
+    for variabel in data_input:
+        memberships[variabel] = {}
+
+        for himpunan in SETS[variabel]:
+            if himpunan == "domain":
+                continue
+
+            memberships[variabel][himpunan] = fuzz.trimf(
+                np.array([data_input[variabel]], dtype=float),
+                SETS[variabel][himpunan]
+            )[0]
+
+    return memberships
 
 
-def fuzzify(perf, imp, att):
-    values = {"Performance": perf, "Improvement": imp, "Attempts": att}
-    return {
-        var: {term: mu(values[var], p) for term, (_, p) in cfg["sets"].items()}
-        for var, cfg in SETS.items()
-    }
+# Proses inferensi: menghitung alpha seluruh rule
+def inferensi(memberships):
+    hasil_rule = []
 
+    for i, rule in enumerate(RULES, start=1):
+        performance, improvement, attempts, z = rule
 
-def infer(memberships):
-    """Inferensi Sugeno: alpha = MIN, output W = sum(alpha*z)/sum(alpha)."""
-    rows = []
-    num = den = 0.0
-    for i, (p, im, a, z) in enumerate(RULES, start=1):
         alpha = min(
-            memberships["Performance"][p],
-            memberships["Improvement"][im],
-            memberships["Attempts"][a],
+            memberships["Performance"][performance],
+            memberships["Improvement"][improvement],
+            memberships["Attempts"][attempts]
         )
-        rows.append({"Rule": f"R{i}", "Performance": p, "Improvement": im,
-                     "Attempts": a, "z": z, "alpha (MIN)": alpha, "alpha x z": alpha * z})
-        if alpha > 0:
-            num += alpha * z
-            den += alpha
-    if den == 0:
+
+        hasil_rule.append({
+            "Rule": f"R{i}",
+            "Performance": performance,
+            "Improvement": improvement,
+            "Attempts": attempts,
+            "z": z,
+            "alpha (MIN)": alpha,
+            "alpha x z": alpha * z
+        })
+
+    return hasil_rule
+
+
+# Proses defuzzifikasi: Weighted Average
+def defuzifikasi(hasil_rule):
+    pembilang = sum(
+        rule["alpha x z"]
+        for rule in hasil_rule
+    )
+
+    penyebut = sum(
+        rule["alpha (MIN)"]
+        for rule in hasil_rule
+    )
+
+    if penyebut == 0:
         raise ValueError("Tidak ada aturan aktif.")
-    return rows, num, den, num / den
 
+    hasil = pembilang / penyebut
 
-def round_half_up(w):
-    """Pembulatan biasa (0,5 naik). round() bawaan Python = pembulatan bankir.
-    round(w, 6) dulu agar selisih floating point (mis. 0.49999999) tidak mengubah hasil."""
-    return int(math.floor(round(w, 6) + 0.5))
+    return pembilang, penyebut, hasil
 
-
+# Menentukan jumlah challenge sebelum reward
 def decision(w):
-    n = max(0, min(3, round_half_up(w)))
-    if n == 0:
-        text = "Reward diberikan LANGSUNG pada challenge yang baru selesai."
+    jumlah = max(0, min(3, round(w)))
+
+    if jumlah == 0:
+        keterangan = "Reward diberikan langsung."
     else:
-        text = f"Reward diberikan setelah {n} challenge berikutnya diselesaikan."
-    return n, text
+        keterangan = (
+            f"Reward diberikan setelah {jumlah} challenge berikutnya."
+        )
+
+    return jumlah, keterangan
 
 
-def run(score, time_min, ref_time, prev_score, attempts):
+# Menggabungkan seluruh proses
+def run(score, time_min, avg_time, prev_score, attempts):
     if not 1 <= attempts <= 5:
         raise ValueError("Attempts harus 1-5.")
-    perf = calculate_performance(score, time_min, ref_time)
+
+    perf = calculate_performance(score, time_min, avg_time)
     imp = calculate_improvement(score, prev_score)
-    mem = fuzzify(perf, imp, attempts)
-    rows, num, den, w = infer(mem)
-    n, text = decision(w)
-    return dict(score=score, time_min=time_min, ref_time=ref_time, prev_score=prev_score,
-                perf=perf, imp=imp, att=attempts, mem=mem, rows=rows,
-                num=num, den=den, w=w, n=n, text=text)
+
+    data_input = {
+        "Performance": perf,
+        "Improvement": imp,
+        "Attempts": attempts
+    }
+
+    memberships = fuzzifikasi(data_input)
+
+    hasil_rule = inferensi(memberships)
+
+    pembilang, penyebut, w = defuzifikasi(hasil_rule)
+
+    jumlah, keterangan = decision(w)
+
+    return {
+        "score": score,
+        "time_min": time_min,
+        "ref_time": avg_time,
+        "prev_score": prev_score,
+        "perf": perf,
+        "imp": imp,
+        "att": attempts,
+        "mem": memberships,
+        "rows": hasil_rule,
+        "num": pembilang,
+        "den": penyebut,
+        "w": w,
+        "n": jumlah,
+        "text": keterangan
+    }
+
