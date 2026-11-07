@@ -1,4 +1,6 @@
 
+import random
+
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -114,10 +116,14 @@ with c2:
     )
 
 
-# Tombol perhitungan
+# ==========================================
+# HITUNG FUZZY SUGENO
+# ==========================================
+
 if st.button("Hitung", type="primary"):
+
     try:
-        st.session_state["res"] = run(
+        hasil = run(
             score,
             time_min,
             avg_time,
@@ -125,8 +131,19 @@ if st.button("Hitung", type="primary"):
             attempts
         )
 
+        st.session_state["res"] = hasil
+
+        # Reset progress untuk hasil perhitungan baru
+        st.session_state["progress"] = 0
+
+        # Reset reward yang sebelumnya diperoleh
+        st.session_state["claimed_reward"] = None
+
     except ValueError as e:
         st.session_state.pop("res", None)
+        st.session_state.pop("progress", None)
+        st.session_state.pop("claimed_reward", None)
+
         st.error(str(e))
 
 
@@ -143,9 +160,9 @@ if res and "score" not in res:
 
 if res:
 
-    # --------------------------------------
-    # INPUT DAN HASIL PERHITUNGAN AWAL
-    # --------------------------------------
+    # ======================================
+    # INPUT
+    # ======================================
 
     st.subheader("Input")
 
@@ -188,9 +205,9 @@ if res:
     )
 
 
-    # --------------------------------------
+    # ======================================
     # FUZZIFIKASI
-    # --------------------------------------
+    # ======================================
 
     st.subheader("Fuzzifikasi")
 
@@ -200,6 +217,7 @@ if res:
         cols,
         res["mem"].items()
     ):
+
         with col:
             st.markdown(f"**{variabel}**")
 
@@ -233,15 +251,14 @@ if res:
             )
 
 
-    # --------------------------------------
+    # ======================================
     # INFERENSI
-    # --------------------------------------
+    # ======================================
 
     st.subheader("Inferensi")
 
     df = pd.DataFrame(res["rows"])
 
-    # Menampilkan hanya rule yang aktif
     rule_aktif = df[df["alpha (MIN)"] > 0].copy()
 
     st.dataframe(
@@ -255,9 +272,9 @@ if res:
     )
 
 
-    # --------------------------------------
+    # ======================================
     # DEFUZZIFIKASI
-    # --------------------------------------
+    # ======================================
 
     st.subheader("Defuzzifikasi")
 
@@ -276,20 +293,16 @@ if res:
     )
 
 
-    # --------------------------------------
-    # KEPUTUSAN REWARD
-    # --------------------------------------
+    # ======================================
+    # KEPUTUSAN
+    # ======================================
 
     st.subheader("Arti / Keputusan")
 
     if res["n"] == 0:
-        st.success(
-            f"N = {res['n']} → {res['text']}"
-        )
+        st.success(f"N = {res['n']} → {res['text']}")
     else:
-        st.info(
-            f"N = {res['n']} → {res['text']}"
-        )
+        st.info(f"N = {res['n']} → {res['text']}")
 
     st.caption(
         "Pool reward: poin langsung (+25/+50/+75) "
@@ -297,9 +310,118 @@ if res:
     )
 
 
-    # --------------------------------------
+    # ======================================
+    # PROGRESS CHALLENGE
+    # ======================================
+
+    st.divider()
+    st.subheader("Progress Reward")
+
+    target = res["n"]
+
+    # Mengambil progress dari session state
+    if "progress" not in st.session_state:
+        st.session_state["progress"] = 0
+
+    if "claimed_reward" not in st.session_state:
+        st.session_state["claimed_reward"] = None
+
+    progress = st.session_state["progress"]
+
+    # Informasi progress
+    if target == 0:
+
+        st.success(
+            "Reward tersedia langsung! "
+            "Tidak perlu menyelesaikan challenge tambahan."
+        )
+
+    else:
+
+        st.write(
+            f"Challenge selesai: **{progress} / {target}**"
+        )
+
+        # Progress bar
+        st.progress(progress / target)
+
+        # Stamp challenge
+        kolom_stamp = st.columns(target)
+
+        for i, kolom in enumerate(kolom_stamp):
+
+            with kolom:
+
+                if i < progress:
+                    st.success(f"✓ Stamp {i + 1}")
+                else:
+                    st.warning(f"○ Stamp {i + 1}")
+
+        # Tombol penyelesaian challenge
+        if progress < target:
+
+            if st.button(
+                "Selesaikan 1 Challenge",
+                type="primary",
+                use_container_width=True
+            ):
+
+                st.session_state["progress"] += 1
+                st.rerun()
+
+
+    # ======================================
+    # KLAIM REWARD
+    # ======================================
+
+    progress = st.session_state["progress"]
+
+    if progress >= target:
+
+        st.success("Semua persyaratan reward sudah terpenuhi!")
+
+        if st.session_state["claimed_reward"] is None:
+
+            if st.button(
+                "🎁 Klaim Reward",
+                type="primary",
+                use_container_width=True
+            ):
+
+                # Menggabungkan seluruh pilihan reward
+                daftar_reward = [
+                    (jenis, nilai)
+                    for jenis, daftar in POOL.items()
+                    for nilai in daftar
+                ]
+
+                # Mengacak satu reward
+                reward = random.choice(daftar_reward)
+
+                st.session_state["claimed_reward"] = reward
+
+                st.rerun()
+
+        else:
+
+            jenis, nilai = st.session_state["claimed_reward"]
+
+            st.balloons()
+
+            st.success(
+                f"🎉 Selamat! Kamu mendapatkan reward: {nilai}"
+            )
+
+            st.write(f"Jenis reward: **{jenis}**")
+
+            st.caption(
+                "Reward berhasil diperoleh dari pengacakan pool reward."
+            )
+
+
+    # ======================================
     # GRAFIK MEMBERSHIP
-    # --------------------------------------
+    # ======================================
 
     st.subheader("Posisi Input pada Fungsi Keanggotaan")
 
@@ -319,9 +441,9 @@ st.divider()
 st.header("2. Acuan: Variabel Input, Himpunan, dan Domain")
 
 
-# ------------------------------------------
+# ==========================================
 # TABEL HIMPUNAN FUZZY
-# ------------------------------------------
+# ==========================================
 
 rows = []
 
@@ -335,6 +457,10 @@ for variabel, cfg in SETS.items():
         rows.append({
             "Variabel": variabel,
             "Himpunan": himpunan,
+            "Domain": (
+                f"{cfg['domain'][0]} - "
+                f"{cfg['domain'][-1]}"
+            ),
             "Parameter MF (a, b, c)": cfg[himpunan]
         })
 
@@ -346,9 +472,9 @@ st.dataframe(
 )
 
 
-# ------------------------------------------
+# ==========================================
 # OUTPUT SUGENO DAN POOL REWARD
-# ------------------------------------------
+# ==========================================
 
 st.markdown(
     "**Output Sugeno:** jumlah challenge yang harus "
@@ -365,18 +491,18 @@ st.dataframe(
 )
 
 
-# ------------------------------------------
+# ==========================================
 # GRAFIK SELURUH MEMBERSHIP FUNCTION
-# ------------------------------------------
+# ==========================================
 
 st.subheader("Grafik Fungsi Keanggotaan")
 
 plot_membership()
 
 
-# ------------------------------------------
+# ==========================================
 # RULE BASE
-# ------------------------------------------
+# ==========================================
 
 st.subheader(f"Rule Base ({len(RULES)} aturan)")
 
