@@ -325,13 +325,13 @@ if res:
 
     progress = st.session_state["progress"]
 
-    # Dua kolom dengan lebar yang sama
+    # ======================================
+    # BARIS PERTAMA: PROGRESS DAN CHALLENGE
+    # ======================================
+
     col_progress, col_challenge = st.columns(2)
 
-    # ======================================
-    # KOLOM KIRI: PROGRESS DAN STAMP
-    # ======================================
-
+    # Kolom kiri: Progress dan Stamp
     with col_progress:
         with st.container(border=True):
             st.write("**Progress Challenge**")
@@ -345,7 +345,6 @@ if res:
                 st.write(f"Progress: **{progress} / {target}**")
                 st.progress(progress / target)
 
-                # Menampilkan stamp
                 kolom_stamp = st.columns(target)
 
                 for i, kolom in enumerate(kolom_stamp):
@@ -355,10 +354,7 @@ if res:
                         else:
                             st.warning(f"○ Stamp {i + 1}")
 
-    # ======================================
-    # KOLOM KANAN: CHALLENGE DAN KLAIM
-    # ======================================
-
+    # Kolom kanan: Penyelesaian Challenge
     with col_challenge:
         with st.container(border=True):
             st.write("**Penyelesaian Challenge**")
@@ -369,7 +365,6 @@ if res:
                     "untuk membuka reward."
                 )
 
-                # Tombol mengikuti lebar teks, tidak memenuhi kolom
                 if st.button(
                     "Selesaikan 1 Challenge",
                     type="primary"
@@ -380,78 +375,76 @@ if res:
             else:
                 st.success("Semua challenge telah diselesaikan!")
 
-            st.divider()
-            st.write("**Klaim Reward**")
+    # ======================================
+    # BARIS KEDUA: KLAIM REWARD
+    # ======================================
 
-            tombol_klaim_aktif = (
-                progress >= target
-                and st.session_state["claimed_reward"] is None
-            )
+    st.write("**Klaim Reward**")
 
-            # Tombol mengikuti lebar teks, tidak memenuhi kolom
-            if st.button(
-                "🎁 Klaim Reward",
-                type="primary",
-                disabled=not tombol_klaim_aktif
-            ):
-                daftar_reward = [
-                    (jenis, nilai)
-                    for jenis, daftar in POOL.items()
-                    for nilai in daftar
-                ]
+    tombol_klaim_aktif = (
+        progress >= target
+        and st.session_state["claimed_reward"] is None
+    )
 
-                st.session_state["claimed_reward"] = random.choice(
-                    daftar_reward
-                )
+    if st.button(
+        "🎁 Klaim Reward",
+        type="primary",
+        disabled=not tombol_klaim_aktif
+    ):
+        daftar_reward = [
+            (jenis, nilai)
+            for jenis, daftar in POOL.items()
+            for nilai in daftar
+        ]
 
-                st.rerun()
+        st.session_state["claimed_reward"] = random.choice(
+            daftar_reward
+        )
 
-            # ======================================
-            # HASIL REWARD DAN PERHITUNGAN SKOR
-            # ======================================
+        st.rerun()
 
-            if st.session_state["claimed_reward"] is not None:
+    # ======================================
+    # HASIL REWARD DAN PERHITUNGAN SKOR
+    # ======================================
 
-                jenis, nilai = st.session_state["claimed_reward"]
+    if st.session_state["claimed_reward"] is not None:
 
-                # Menghitung skor akhir berdasarkan jenis reward
-                if jenis == "Poin langsung":
-                    bonus = float(nilai.replace("+", ""))
-                    skor_akhir = res["score"] + bonus
+        jenis, nilai = st.session_state["claimed_reward"]
 
-                    rumus = (
-                        f"{res['score']:.2f} + {bonus:.2f}"
-                    )
+        # Menghitung skor akhir berdasarkan jenis reward
+        if jenis == "Poin langsung":
+            bonus = float(nilai.replace("+", ""))
+            skor_akhir = res["score"] + bonus
 
-                elif jenis == "Multiplier skor":
-                    multiplier = float(nilai.replace("x", ""))
-                    skor_akhir = res["score"] * multiplier
+            rumus = f"{res['score']:.2f} + {bonus:.2f}"
 
-                    rumus = (
-                        f"{res['score']:.2f} × {multiplier:.2f}"
-                    )
+        elif jenis == "Multiplier skor":
+            multiplier = float(nilai.replace("x", ""))
+            skor_akhir = res["score"] * multiplier
 
-                st.divider()
+            rumus = f"{res['score']:.2f} × {multiplier:.2f}"
 
-                st.success(
-                    f"🎉 Selamat! Kamu mendapatkan reward: **{nilai}**"
-                )
+        st.divider()
 
-                st.write(f"Jenis reward: **{jenis}**")
-                st.write("**Perhitungan Skor Akhir**")
+        st.success(
+            f"🎉 Selamat! Kamu mendapatkan reward: **{nilai}**"
+        )
 
-                st.code(
-                    f"Skor awal   = {res['score']:.2f}\n"
-                    f"Reward      = {nilai}\n"
-                    f"Perhitungan = {rumus}\n"
-                    f"Skor akhir  = {skor_akhir:.2f}"
-                )
+        st.write(f"Jenis reward: **{jenis}**")
+        st.write("**Perhitungan Skor Akhir**")
 
-                st.metric(
-                    "Skor Akhir",
-                    f"{skor_akhir:g}",
-                    delta=f"+{skor_akhir - res['score']:g} poin"
-                )
+        st.code(
+            f"Skor awal   = {res['score']:.2f}\n"
+            f"Reward      = {nilai}\n"
+            f"Perhitungan = {rumus}\n"
+            f"Skor akhir  = {skor_akhir:.2f}"
+        )
+
+        st.metric(
+            "Skor Akhir",
+            f"{skor_akhir:g}",
+            delta=f"+{skor_akhir - res['score']:g} poin"
+        )
 
 
     # ======================================
