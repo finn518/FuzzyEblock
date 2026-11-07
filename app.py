@@ -369,55 +369,115 @@ if res:
                 st.session_state["progress"] += 1
                 st.rerun()
 
+# ======================================
+# PROGRESS CHALLENGE DAN KLAIM REWARD
+# ======================================
 
-    # ======================================
-    # KLAIM REWARD
-    # ======================================
+st.divider()
+st.subheader("Progress Reward")
 
-    progress = st.session_state["progress"]
+target = res["n"]
 
-    if progress >= target:
+# Inisialisasi session state
+if "progress" not in st.session_state:
+    st.session_state["progress"] = 0
 
-        st.success("Semua persyaratan reward sudah terpenuhi!")
+if "claimed_reward" not in st.session_state:
+    st.session_state["claimed_reward"] = None
 
-        if st.session_state["claimed_reward"] is None:
+progress = st.session_state["progress"]
 
-            if st.button(
-                "🎁 Klaim Reward",
-                type="primary",
-                use_container_width=True
-            ):
+# Membuat dua kolom
+col_progress, col_challenge = st.columns(2)
 
-                # Menggabungkan seluruh pilihan reward
-                daftar_reward = [
-                    (jenis, nilai)
-                    for jenis, daftar in POOL.items()
-                    for nilai in daftar
-                ]
+# ======================================
+# KOLOM KIRI: PROGRESS DAN STAMP
+# ======================================
 
-                # Mengacak satu reward
-                reward = random.choice(daftar_reward)
+with col_progress:
+    st.write("**Progress Challenge**")
 
-                st.session_state["claimed_reward"] = reward
+    if target == 0:
+        st.success("Reward dapat langsung diklaim.")
+        st.write("Progress: 0 / 0")
 
-                st.rerun()
+    else:
+        st.write(f"Progress: **{progress} / {target}**")
+        st.progress(progress / target)
 
-        else:
+        # Menampilkan stamp
+        kolom_stamp = st.columns(target)
 
-            jenis, nilai = st.session_state["claimed_reward"]
+        for i, kolom in enumerate(kolom_stamp):
+            with kolom:
+                if i < progress:
+                    st.success(f"✓ Stamp {i + 1}")
+                else:
+                    st.warning(f"○ Stamp {i + 1}")
 
-            st.balloons()
 
-            st.success(
-                f"🎉 Selamat! Kamu mendapatkan reward: {nilai}"
-            )
+# ======================================
+# KOLOM KANAN: CHALLENGE DAN KLAIM REWARD
+# ======================================
 
-            st.write(f"Jenis reward: **{jenis}**")
+with col_challenge:
+    st.write("**Penyelesaian Challenge**")
 
-            st.caption(
-                "Reward berhasil diperoleh dari pengacakan pool reward."
-            )
+    if progress < target:
+        st.write(
+            f"Selesaikan {target - progress} challenge lagi "
+            "untuk membuka reward."
+        )
 
+        # Tombol menyelesaikan challenge
+        if st.button(
+            "Selesaikan 1 Challenge",
+            use_container_width=True,
+            type="primary"
+        ):
+            st.session_state["progress"] += 1
+            st.rerun()
+
+    else:
+        st.success("Semua challenge telah diselesaikan!")
+
+    # Tombol klaim reward
+    st.write("**Klaim Reward**")
+
+    tombol_klaim_aktif = (
+        st.session_state["progress"] >= target
+        and st.session_state["claimed_reward"] is None
+    )
+
+    if st.button(
+        "🎁 Klaim Reward",
+        use_container_width=True,
+        type="primary",
+        disabled=not tombol_klaim_aktif
+    ):
+        # Menggabungkan seluruh pilihan reward
+        daftar_reward = [
+            (jenis, nilai)
+            for jenis, daftar in POOL.items()
+            for nilai in daftar
+        ]
+
+        # Memilih satu reward secara acak
+        st.session_state["claimed_reward"] = random.choice(
+            daftar_reward
+        )
+
+        st.rerun()
+
+    # Menampilkan hasil reward
+    if st.session_state["claimed_reward"] is not None:
+        jenis, nilai = st.session_state["claimed_reward"]
+
+        st.success(
+            f"🎉 Selamat! Kamu mendapatkan reward: **{nilai}**"
+        )
+
+        st.write(f"Jenis reward: **{jenis}**")
 
     # ======================================
     # GRAFIK MEMBERSHIP
