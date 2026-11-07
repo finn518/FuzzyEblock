@@ -454,11 +454,7 @@ for variabel, cfg in SETS.items():
         rows.append({
             "Variabel": variabel,
             "Himpunan": himpunan,
-            "Domain": (
-                f"{cfg['domain'][0]} - "
-                f"{cfg['domain'][-1]}"
-            ),
-            "Parameter MF (a, b, c)": cfg[himpunan]
+            "Domain": cfg[himpunan]
         })
 
 
@@ -467,7 +463,6 @@ st.dataframe(
     hide_index=True,
     width="stretch"
 )
-
 
 # ==========================================
 # OUTPUT SUGENO DAN POOL REWARD
