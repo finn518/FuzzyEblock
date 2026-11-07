@@ -1,9 +1,11 @@
 import random
+
 import numpy as np
 import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
 import skfuzzy as fuzz
+
 from fuzzy_core import SETS, RULES, POOL, run
 
 
@@ -176,7 +178,6 @@ if res:
                 "Improvement",
                 "Attempts"
             ],
-
             "Nilai": [
                 f"{res['score']:.2f}",
                 f"{res['time_min']:.2f}",
@@ -186,7 +187,6 @@ if res:
                 f"{res['imp']:.2f}",
                 str(res["att"])
             ],
-
             "Keterangan": [
                 "",
                 "",
@@ -214,7 +214,6 @@ if res:
         cols,
         res["mem"].items()
     ):
-
         with col:
             st.markdown(f"**{variabel}**")
 
@@ -255,7 +254,6 @@ if res:
     st.subheader("Inferensi")
 
     df = pd.DataFrame(res["rows"])
-
     rule_aktif = df[df["alpha (MIN)"] > 0].copy()
 
     st.dataframe(
@@ -308,7 +306,7 @@ if res:
 
 
     # ======================================
-    # PROGRESS CHALLENGE DAN KLAIM REWARD
+    # PROGRESS REWARD
     # ======================================
 
     st.divider()
@@ -325,13 +323,10 @@ if res:
 
     progress = st.session_state["progress"]
 
-    # ======================================
-    # BARIS PERTAMA: PROGRESS DAN CHALLENGE
-    # ======================================
-
+    # Baris pertama: dua panel dengan lebar sama
     col_progress, col_challenge = st.columns(2)
 
-    # Kolom kiri: Progress dan Stamp
+    # Kolom kiri: progress dan stamp
     with col_progress:
         with st.container(border=True):
             st.write("**Progress Challenge**")
@@ -354,7 +349,7 @@ if res:
                         else:
                             st.warning(f"○ Stamp {i + 1}")
 
-    # Kolom kanan: Penyelesaian Challenge
+    # Kolom kanan: penyelesaian challenge saja
     with col_challenge:
         with st.container(border=True):
             st.write("**Penyelesaian Challenge**")
@@ -376,7 +371,7 @@ if res:
                 st.success("Semua challenge telah diselesaikan!")
 
     # ======================================
-    # BARIS KEDUA: KLAIM REWARD
+    # KLAIM REWARD: DI BAWAH KEDUA PANEL
     # ======================================
 
     st.write("**Klaim Reward**")
@@ -411,18 +406,20 @@ if res:
 
         jenis, nilai = st.session_state["claimed_reward"]
 
-        # Menghitung skor akhir berdasarkan jenis reward
         if jenis == "Poin langsung":
             bonus = float(nilai.replace("+", ""))
             skor_akhir = res["score"] + bonus
-
             rumus = f"{res['score']:.2f} + {bonus:.2f}"
 
         elif jenis == "Multiplier skor":
             multiplier = float(nilai.replace("x", ""))
             skor_akhir = res["score"] * multiplier
-
             rumus = f"{res['score']:.2f} × {multiplier:.2f}"
+
+        else:
+            st.error(f"Jenis reward tidak dikenali: {jenis}")
+            skor_akhir = res["score"]
+            rumus = str(res["score"])
 
         st.divider()
 
@@ -465,7 +462,6 @@ if res:
 # ==========================================
 
 st.divider()
-
 st.header("2. Acuan: Variabel Input, Himpunan, dan Domain")
 
 
@@ -476,9 +472,7 @@ st.header("2. Acuan: Variabel Input, Himpunan, dan Domain")
 rows = []
 
 for variabel, cfg in SETS.items():
-
     for himpunan in cfg:
-
         if himpunan == "domain":
             continue
 
@@ -524,7 +518,6 @@ st.dataframe(
 # ==========================================
 
 st.subheader("Grafik Fungsi Keanggotaan")
-
 plot_membership()
 
 
@@ -543,7 +536,6 @@ st.dataframe(
             "Attempts": attempts,
             "Output (z)": z
         }
-
         for i, (
             performance,
             improvement,
