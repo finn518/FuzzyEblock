@@ -1,12 +1,9 @@
-
 import random
-
 import numpy as np
 import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
 import skfuzzy as fuzz
-
 from fuzzy_core import SETS, RULES, POOL, run
 
 
@@ -310,7 +307,6 @@ if res:
     )
 
 
-
     # ======================================
     # PROGRESS CHALLENGE DAN KLAIM REWARD
     # ======================================
@@ -320,6 +316,7 @@ if res:
 
     target = res["n"]
 
+    # Inisialisasi session state
     if "progress" not in st.session_state:
         st.session_state["progress"] = 0
 
@@ -328,92 +325,133 @@ if res:
 
     progress = st.session_state["progress"]
 
-    # Dua kolom progress dan tombol challenge
+    # Dua kolom dengan lebar yang sama
     col_progress, col_challenge = st.columns(2)
 
+    # ======================================
+    # KOLOM KIRI: PROGRESS DAN STAMP
+    # ======================================
+
     with col_progress:
-        st.write("**Progress Challenge**")
+        with st.container(border=True):
+            st.write("**Progress Challenge**")
 
-        if target == 0:
-            st.success("Tidak perlu menyelesaikan challenge tambahan.")
-            st.progress(1.0)
-            st.write("Progress: 0 / 0")
+            if target == 0:
+                st.success("Reward tersedia langsung!")
+                st.write("Progress: 0 / 0")
+                st.progress(1.0)
 
-        else:
-            st.write(f"Progress: **{progress} / {target}**")
-            st.progress(progress / target)
+            else:
+                st.write(f"Progress: **{progress} / {target}**")
+                st.progress(progress / target)
 
-            # Stamp
-            kolom_stamp = st.columns(target)
+                # Menampilkan stamp
+                kolom_stamp = st.columns(target)
 
-            for i, kolom in enumerate(kolom_stamp):
-                with kolom:
-                    if i < progress:
-                        st.success(f"✓ Stamp {i + 1}")
-                    else:
-                        st.warning(f"○ Stamp {i + 1}")
+                for i, kolom in enumerate(kolom_stamp):
+                    with kolom:
+                        if i < progress:
+                            st.success(f"✓ Stamp {i + 1}")
+                        else:
+                            st.warning(f"○ Stamp {i + 1}")
+
+    # ======================================
+    # KOLOM KANAN: CHALLENGE DAN KLAIM
+    # ======================================
 
     with col_challenge:
-        st.write("**Penyelesaian Challenge**")
+        with st.container(border=True):
+            st.write("**Penyelesaian Challenge**")
 
-        if progress < target:
-            st.write(
-                f"Selesaikan {target - progress} challenge lagi "
-                "untuk membuka reward."
+            if progress < target:
+                st.write(
+                    f"Selesaikan {target - progress} challenge lagi "
+                    "untuk membuka reward."
+                )
+
+                # Tombol mengikuti lebar teks, tidak memenuhi kolom
+                if st.button(
+                    "Selesaikan 1 Challenge",
+                    type="primary"
+                ):
+                    st.session_state["progress"] += 1
+                    st.rerun()
+
+            else:
+                st.success("Semua challenge telah diselesaikan!")
+
+            st.divider()
+            st.write("**Klaim Reward**")
+
+            tombol_klaim_aktif = (
+                progress >= target
+                and st.session_state["claimed_reward"] is None
             )
 
+            # Tombol mengikuti lebar teks, tidak memenuhi kolom
             if st.button(
-                "Selesaikan 1 Challenge",
-                use_container_width=True,
-                type="primary"
+                "🎁 Klaim Reward",
+                type="primary",
+                disabled=not tombol_klaim_aktif
             ):
-                st.session_state["progress"] += 1
+                daftar_reward = [
+                    (jenis, nilai)
+                    for jenis, daftar in POOL.items()
+                    for nilai in daftar
+                ]
+
+                st.session_state["claimed_reward"] = random.choice(
+                    daftar_reward
+                )
+
                 st.rerun()
 
-        else:
-            st.success("Semua challenge telah diselesaikan!")
+            # ======================================
+            # HASIL REWARD DAN PERHITUNGAN SKOR
+            # ======================================
 
+            if st.session_state["claimed_reward"] is not None:
 
-    # ======================================
-    # KLAIM REWARD
-    # ======================================
+                jenis, nilai = st.session_state["claimed_reward"]
 
-    st.write("")
+                # Menghitung skor akhir berdasarkan jenis reward
+                if jenis == "Poin langsung":
+                    bonus = float(nilai.replace("+", ""))
+                    skor_akhir = res["score"] + bonus
 
-    if st.session_state["progress"] >= target:
-        tombol_klaim_aktif = True
-    else:
-        tombol_klaim_aktif = False
+                    rumus = (
+                        f"{res['score']:.2f} + {bonus:.2f}"
+                    )
 
-    if st.button(
-        "🎁 Klaim Reward",
-        type="primary",
-        use_container_width=True,
-        disabled=not tombol_klaim_aktif or
-        st.session_state["claimed_reward"] is not None
-    ):
-        daftar_reward = [
-            (jenis, nilai)
-            for jenis, daftar in POOL.items()
-            for nilai in daftar
-        ]
+                elif jenis == "Multiplier skor":
+                    multiplier = float(nilai.replace("x", ""))
+                    skor_akhir = res["score"] * multiplier
 
-        st.session_state["claimed_reward"] = random.choice(
-            daftar_reward
-        )
+                    rumus = (
+                        f"{res['score']:.2f} × {multiplier:.2f}"
+                    )
 
-        st.rerun()
+                st.divider()
 
+                st.success(
+                    f"🎉 Selamat! Kamu mendapatkan reward: **{nilai}**"
+                )
 
-    # Menampilkan hasil reward
-    if st.session_state["claimed_reward"] is not None:
-        jenis, nilai = st.session_state["claimed_reward"]
+                st.write(f"Jenis reward: **{jenis}**")
+                st.write("**Perhitungan Skor Akhir**")
 
-        st.success(
-            f"🎉 Selamat! Kamu mendapatkan reward: **{nilai}**"
-        )
+                st.code(
+                    f"Skor awal   = {res['score']:.2f}\n"
+                    f"Reward      = {nilai}\n"
+                    f"Perhitungan = {rumus}\n"
+                    f"Skor akhir  = {skor_akhir:.2f}"
+                )
 
-        st.write(f"Jenis reward: **{jenis}**")
+                st.metric(
+                    "Skor Akhir",
+                    f"{skor_akhir:g}",
+                    delta=f"+{skor_akhir - res['score']:g} poin"
+                )
 
 
     # ======================================
@@ -454,7 +492,11 @@ for variabel, cfg in SETS.items():
         rows.append({
             "Variabel": variabel,
             "Himpunan": himpunan,
-            "Domain": cfg[himpunan]
+            "Domain": (
+                f"{cfg['domain'][0]} - "
+                f"{cfg['domain'][-1]}"
+            ),
+            "Parameter MF (a, b, c)": cfg[himpunan]
         })
 
 
@@ -463,6 +505,7 @@ st.dataframe(
     hide_index=True,
     width="stretch"
 )
+
 
 # ==========================================
 # OUTPUT SUGENO DAN POOL REWARD
