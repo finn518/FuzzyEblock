@@ -1,5 +1,4 @@
 import random
-
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -382,7 +381,7 @@ if res:
     )
 
     if st.button(
-        "🎁 Klaim Reward",
+        "Claim Reward",
         type="primary",
         disabled=not tombol_klaim_aktif
     ):
@@ -442,20 +441,6 @@ if res:
             f"{skor_akhir:g}",
             delta=f"+{skor_akhir - res['score']:g} poin"
         )
-
-
-    # ======================================
-    # GRAFIK MEMBERSHIP
-    # ======================================
-
-    st.subheader("Posisi Input pada Fungsi Keanggotaan")
-
-    plot_membership({
-        "Performance": res["perf"],
-        "Improvement": res["imp"],
-        "Attempts": res["att"]
-    })
-
 
 # ==========================================
 # 2. ACUAN
