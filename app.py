@@ -310,8 +310,9 @@ if res:
     )
 
 
+
     # ======================================
-    # PROGRESS CHALLENGE
+    # PROGRESS CHALLENGE DAN KLAIM REWARD
     # ======================================
 
     st.divider()
@@ -319,7 +320,6 @@ if res:
 
     target = res["n"]
 
-    # Mengambil progress dari session state
     if "progress" not in st.session_state:
         st.session_state["progress"] = 0
 
@@ -328,146 +328,82 @@ if res:
 
     progress = st.session_state["progress"]
 
-    # Informasi progress
-    if target == 0:
+    # Dua kolom progress dan tombol challenge
+    col_progress, col_challenge = st.columns(2)
 
-        st.success(
-            "Reward tersedia langsung! "
-            "Tidak perlu menyelesaikan challenge tambahan."
-        )
+    with col_progress:
+        st.write("**Progress Challenge**")
 
-    else:
+        if target == 0:
+            st.success("Tidak perlu menyelesaikan challenge tambahan.")
+            st.progress(1.0)
+            st.write("Progress: 0 / 0")
 
-        st.write(
-            f"Challenge selesai: **{progress} / {target}**"
-        )
+        else:
+            st.write(f"Progress: **{progress} / {target}**")
+            st.progress(progress / target)
 
-        # Progress bar
-        st.progress(progress / target)
+            # Stamp
+            kolom_stamp = st.columns(target)
 
-        # Stamp challenge
-        kolom_stamp = st.columns(target)
+            for i, kolom in enumerate(kolom_stamp):
+                with kolom:
+                    if i < progress:
+                        st.success(f"✓ Stamp {i + 1}")
+                    else:
+                        st.warning(f"○ Stamp {i + 1}")
 
-        for i, kolom in enumerate(kolom_stamp):
+    with col_challenge:
+        st.write("**Penyelesaian Challenge**")
 
-            with kolom:
-
-                if i < progress:
-                    st.success(f"✓ Stamp {i + 1}")
-                else:
-                    st.warning(f"○ Stamp {i + 1}")
-
-        # Tombol penyelesaian challenge
         if progress < target:
+            st.write(
+                f"Selesaikan {target - progress} challenge lagi "
+                "untuk membuka reward."
+            )
 
             if st.button(
                 "Selesaikan 1 Challenge",
-                type="primary",
-                use_container_width=True
+                use_container_width=True,
+                type="primary"
             ):
-
                 st.session_state["progress"] += 1
                 st.rerun()
 
-# ======================================
-# PROGRESS CHALLENGE DAN KLAIM REWARD
-# ======================================
+        else:
+            st.success("Semua challenge telah diselesaikan!")
 
-st.divider()
-st.subheader("Progress Reward")
 
-target = res["n"]
+    # ======================================
+    # KLAIM REWARD
+    # ======================================
 
-# Inisialisasi session state
-if "progress" not in st.session_state:
-    st.session_state["progress"] = 0
+    st.write("")
 
-if "claimed_reward" not in st.session_state:
-    st.session_state["claimed_reward"] = None
-
-progress = st.session_state["progress"]
-
-# Membuat dua kolom
-col_progress, col_challenge = st.columns(2)
-
-# ======================================
-# KOLOM KIRI: PROGRESS DAN STAMP
-# ======================================
-
-with col_progress:
-    st.write("**Progress Challenge**")
-
-    if target == 0:
-        st.success("Reward dapat langsung diklaim.")
-        st.write("Progress: 0 / 0")
-
+    if st.session_state["progress"] >= target:
+        tombol_klaim_aktif = True
     else:
-        st.write(f"Progress: **{progress} / {target}**")
-        st.progress(progress / target)
-
-        # Menampilkan stamp
-        kolom_stamp = st.columns(target)
-
-        for i, kolom in enumerate(kolom_stamp):
-            with kolom:
-                if i < progress:
-                    st.success(f"✓ Stamp {i + 1}")
-                else:
-                    st.warning(f"○ Stamp {i + 1}")
-
-
-# ======================================
-# KOLOM KANAN: CHALLENGE DAN KLAIM REWARD
-# ======================================
-
-with col_challenge:
-    st.write("**Penyelesaian Challenge**")
-
-    if progress < target:
-        st.write(
-            f"Selesaikan {target - progress} challenge lagi "
-            "untuk membuka reward."
-        )
-
-        # Tombol menyelesaikan challenge
-        if st.button(
-            "Selesaikan 1 Challenge",
-            use_container_width=True,
-            type="primary"
-        ):
-            st.session_state["progress"] += 1
-            st.rerun()
-
-    else:
-        st.success("Semua challenge telah diselesaikan!")
-
-    # Tombol klaim reward
-    st.write("**Klaim Reward**")
-
-    tombol_klaim_aktif = (
-        st.session_state["progress"] >= target
-        and st.session_state["claimed_reward"] is None
-    )
+        tombol_klaim_aktif = False
 
     if st.button(
         "🎁 Klaim Reward",
-        use_container_width=True,
         type="primary",
-        disabled=not tombol_klaim_aktif
+        use_container_width=True,
+        disabled=not tombol_klaim_aktif or
+        st.session_state["claimed_reward"] is not None
     ):
-        # Menggabungkan seluruh pilihan reward
         daftar_reward = [
             (jenis, nilai)
             for jenis, daftar in POOL.items()
             for nilai in daftar
         ]
 
-        # Memilih satu reward secara acak
         st.session_state["claimed_reward"] = random.choice(
             daftar_reward
         )
 
         st.rerun()
+
 
     # Menampilkan hasil reward
     if st.session_state["claimed_reward"] is not None:
@@ -478,6 +414,7 @@ with col_challenge:
         )
 
         st.write(f"Jenis reward: **{jenis}**")
+
 
     # ======================================
     # GRAFIK MEMBERSHIP
