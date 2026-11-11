@@ -173,8 +173,8 @@ def decision(w):
 
 # Menggabungkan seluruh proses
 def run(score, time_min, avg_time, prev_score, attempts):
-    if not 1 <= attempts <= 5:
-        raise ValueError("Attempts harus 1-5.")
+    if not 1 <= attempts <= 6:
+        raise ValueError("Attempts harus 1-6.")
 
     perf = calculate_performance(score, time_min, avg_time)
     imp = calculate_improvement(score, prev_score)

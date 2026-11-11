@@ -109,7 +109,7 @@ with c2:
     attempts = st.slider(
         "Attempts (1-5)",
         min_value=1,
-        max_value=5,
+        max_value=6,
         value=1
     )
 
