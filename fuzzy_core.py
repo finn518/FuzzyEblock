@@ -19,7 +19,7 @@ SETS = {
         "domain": np.arange(1, 6),
         "Rendah": [1, 1, 3],
         "Cukup": [2, 3, 4],
-        "Tinggi": [3, 5, 5],
+        "Tinggi": [3, 5, 6],
     },
 }
 
