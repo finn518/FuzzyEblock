@@ -1,5 +1,7 @@
 fastapi
+uvicorn
 numpy
 scipy
 networkx
+packaging
 scikit-fuzzy
