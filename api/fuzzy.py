@@ -79,12 +79,12 @@ def calculate_performance(score, time_min, avg_time):
     ))
 
 
-# Menghitung nilai Improvement
-def calculate_improvement(score, prev_score=None):
+def calculate_improvement(score, prev_score=None, attempts=1):
     if not 0 <= score <= 100:
         raise ValueError("Skor harus 0-100.")
 
-    if prev_score is None:
+
+    if attempts == 1 or prev_score is None:
         return 0.0
 
     if not 0 <= prev_score <= 100:
@@ -181,7 +181,7 @@ def run(score, time_min, avg_time, prev_score, attempts):
     attempts_used = min(attempts, 6)
 
     perf = calculate_performance(score, time_min, avg_time)
-    imp = calculate_improvement(score, prev_score)
+    imp = calculate_improvement(score, prev_score, attempts)
 
     data_input = {
         "Performance": perf,
