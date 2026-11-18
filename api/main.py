@@ -24,8 +24,9 @@ class EvaluateRequest(BaseModel):
         description="Skor sebelumnya (0-100). Isi null jika percobaan pertama.",
         examples=[60],
     )
-    attempts: int = Field(..., ge=1, le=6,
-                          description="Jumlah percobaan (1-6)", examples=[1])
+    attempts: int = Field(..., ge=1,
+        description="Jumlah percobaan (>= 1). Nilai > 6 dianggap Tinggi",
+         examples=[1])
 
 
 class EvaluateResponse(BaseModel):

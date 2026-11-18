@@ -174,8 +174,11 @@ def decision(w):
 
 # Menggabungkan seluruh proses
 def run(score, time_min, avg_time, prev_score, attempts):
-    if not 1 <= attempts <= 6:
-        raise ValueError("Attempts harus 1-6.")
+    if attempts < 1:
+        raise ValueError("Attempts harus >= 1.")
+
+    # Attempts > 6 dianggap sama dengan 6 (himpunan Tinggi penuh)
+    attempts_used = min(attempts, 6)
 
     perf = calculate_performance(score, time_min, avg_time)
     imp = calculate_improvement(score, prev_score)
@@ -183,15 +186,12 @@ def run(score, time_min, avg_time, prev_score, attempts):
     data_input = {
         "Performance": perf,
         "Improvement": imp,
-        "Attempts": attempts
+        "Attempts": attempts_used
     }
 
     memberships = fuzzifikasi(data_input)
-
     hasil_rule = inferensi(memberships)
-
     pembilang, penyebut, w = defuzifikasi(hasil_rule)
-
     jumlah, keterangan = decision(w)
 
     return {
@@ -201,7 +201,8 @@ def run(score, time_min, avg_time, prev_score, attempts):
         "prev_score": prev_score,
         "perf": perf,
         "imp": imp,
-        "att": attempts,
+        "att": attempts,            # nilai asli dari user
+        "att_used": attempts_used,  # nilai yang dipakai fuzzy
         "mem": memberships,
         "rows": hasil_rule,
         "num": pembilang,
